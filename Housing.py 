@@ -1,0 +1,8 @@
+import pandas as pd
+import sys
+print(sys.version)
+print('hello!')
+a = pd.Series(data=[1,2,3])
+x = "yea!"
+print(x)
+print(a)
