@@ -21,18 +21,28 @@ def rmsle(y, y_pred):
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import GridSearchCV
 
-est = GradientBoostingRegressor(n_estimators=100, learning_rate=0.01,
-         max_depth=9,subsample=1.0, random_state=0, loss='ls').fit(house_training, house_labels)
+parameters = {"n_estimators": [100, 200, 300, 400, 500, 600, 700], 
+			  "learning_rate":[1.0, 0.1, 0.01, 0.001, 0.0001, 0.00001],
+			  "max_depth":[3, 4, 5, 6, 7, 8, 9]}
 
-results = cross_val_score(est, house_training, house_labels, cv=10, n_jobs =-1)
-score = est.score(house_training, house_labels)
-rmse = rmsle(house_labels, est.predict(house_training))
+Grid_GBR = GradientBoostingRegressor(subsample=1.0, random_state=0, loss='ls')
+
+Grid_GBR.fit(house_training, house_labels)
+
+Grid_GBR_CV = GridSearchCV(Grid_GBR, parameters,n_jobs=-1)
+Grid_GBR_CV.fit(house_training , house_labels)
+
+results = cross_val_score(Grid_GBR_CV, house_training, house_labels, cv=10, n_jobs =-1)
+score = Grid_GBR_CV.score(house_training, house_labels)
+rmse = rmsle(house_labels, Grid_GBR_CV.predict(house_training))
 
 print("Results: {:.2f}% ({:.2f}%) {:.5f} {:.5f}".format(results.mean()*100, results.std()*100, score, rmse))
+
+
 
 
 
 # best result 
 we_the_best = "Results: {:.2f}% ({:.2f}%) {:.5f} {:.5f}".format(results.mean()*100, results.std()*100, score, rmse)
-print("Results: {:.2f}% ({:.2f}%) {:.5f} {:.5f}".format(results.mean()*100, results.std()*100, score, rmse))
