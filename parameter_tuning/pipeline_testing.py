@@ -348,6 +348,10 @@ dtr_grid_pred = dtr_grid.best_estimator_.named_steps['dtr'].predict(house_train)
 
 dtr_rmse = rmsle(house_labels, dtr_grid_pred)
 
+# Store the tree to be used in Ada
+
+tree_grid_cv = dtr_grid.best_estimator_.named_steps['dtr']
+
 print('Results: {:8f} {:8f}'.format(dtr_grid.best_score_, dtr_rmse))
 ############################ Random Forest ####################################
 from sklearn.ensemble import RandomForestRegressor
@@ -392,9 +396,20 @@ print('Results: {:8f} {:8f}'.format(gbr_grid.best_score_, gbr_rmse))
 from sklearn.ensemble import AdaBoostRegressor
 
 ada_pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                           ('ada', AdaBoostRegressor(random_state=42))])
+                           ('ada', AdaBoostRegressor(tree_grid_cv,loss='square', random_state=42))])
 
-ada_param_grid = {''}
+ada_param_grid = {'ada__n_estimators' : [650, 700, 750],
+                  'ada__learning_rate' : [0.8, 0.9, 1.0]}
+
+ada_grid = GridSearchCV(ada_pipe, param_grid=ada_param_grid, cv=5, n_jobs=-1)
+
+ada_grid.fit(house_train_staging.copy(), house_labels)
+
+ada_grid_pred = ada_grid.best_estimator_.named_steps['ada'].predict(house_train)
+
+ada_rmse = rmsle(house_labels, ada_grid_pred)
+
+print('Results: {:8f} {:8f}'.format(ada_grid.best_score_, ada_rmse))
 # only uncomment this if your're getting better results
 #pd.to_pickle(house_training, 'house_training')
 #pd.to_pickle(house_test_data, 'house_test_data')
