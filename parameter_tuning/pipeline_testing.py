@@ -336,7 +336,7 @@ print('Results: {:8f} {:8f}'.format(svm_grid.best_score_, svm_rmse))
 from sklearn.ensemble import RandomForestRegressor
 
 rf_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
-                          ('rf', RandomForestRegressor(random_state=42, n_jobs=-1, ))])
+                          ('rf', RandomForestRegressor(random_state=42, n_jobs=-1))])
 
 rf_param_grid =  {'rf__max_depth' : [16, 17, 18],
                    'rf__n_estimators' : [700, 800, 900],
@@ -351,7 +351,26 @@ rf_grid_pred = rf_grid.best_estimator_.named_steps['rf'].predict(house_train)
 rf_rmse = rmsle(house_labels, rf_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(rf_grid.best_score_, rf_rmse))
+################################## GBR ########################################
+from sklearn.ensemble import GradientBoostingRegressor
 
+gbr_pipe = Pipeline(steps=[('preprocessor', preprocessor),
+                           ('gbr', GradientBoostingRegressor(random_state=42))])
+
+gbr_param_grid = {'gbr__max_depth' : [3, 4, 5, 8],
+                  'gbr__n_estimators' : [100, 500, 1000],
+                  'gbr__learning_rate' : [0.00001, 0.01, 1.0, 5.0],
+                  'gbr__subsample' : [0.1, 0.5, 1.0]}
+
+gbr_grid = GridSearchCV(gbr_pipe, param_grid=gbr_param_grid, cv=5, n_jobs=-1)
+
+gbr_grid.fit(house_train_staging.copy(), house_labels)
+
+gbr_grid_pred = gbr_grid.best_estimator_.named_steps['gbr'].predict(house_train)
+
+gbr_rmse = rmsle(house_labels, gbr_grid_pred)
+
+print('Results: {:8f} {:8f}'.format(gbr_grid.best_score_, gbr_rmse))
 # only uncomment this if your're getting better results
 #pd.to_pickle(house_training, 'house_training')
 #pd.to_pickle(house_test_data, 'house_test_data')
