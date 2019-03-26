@@ -332,6 +332,23 @@ svm_grid_pred = svm_grid.best_estimator_.named_steps['svm'].predict(house_train)
 svm_rmse = rmsle(house_labels, svm_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(svm_grid.best_score_, svm_rmse))
+############################ Decision tree ####################################
+from sklearn.tree import DecisionTreeRegressor
+
+dtr_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('dtr', DecisionTreeRegressor(random_state=42))])
+
+dtr_param_grid = {'dtr__max_depth' : [6, 7, 8],
+                   'dtr__max_features': ['auto']}
+
+dtr_grid = GridSearchCV(dtr_pipe, param_grid=dtr_param_grid, cv=5, n_jobs=-1)
+
+dtr_grid.fit(house_train_staging.copy(), house_labels)
+
+dtr_grid_pred = dtr_grid.best_estimator_.named_steps['dtr'].predict(house_train)
+
+dtr_rmse = rmsle(house_labels, dtr_grid_pred)
+
+print('Results: {:8f} {:8f}'.format(dtr_grid.best_score_, dtr_rmse))
 ############################ Random Forest ####################################
 from sklearn.ensemble import RandomForestRegressor
 
@@ -357,10 +374,10 @@ from sklearn.ensemble import GradientBoostingRegressor
 gbr_pipe = Pipeline(steps=[('preprocessor', preprocessor),
                            ('gbr', GradientBoostingRegressor(random_state=42))])
 
-gbr_param_grid = {'gbr__max_depth' : [3, 4, 5, 8],
-                  'gbr__n_estimators' : [100, 500, 1000],
-                  'gbr__learning_rate' : [0.00001, 0.01, 1.0, 5.0],
-                  'gbr__subsample' : [0.1, 0.5, 1.0]}
+gbr_param_grid = {'gbr__max_depth' : [2, 3, 4],
+                  'gbr__n_estimators' : [32, 33, 34],
+                  'gbr__learning_rate' : [0.2, 0.3, 0.4],
+                  'gbr__subsample' : [1.0]}
 
 gbr_grid = GridSearchCV(gbr_pipe, param_grid=gbr_param_grid, cv=5, n_jobs=-1)
 
@@ -371,6 +388,13 @@ gbr_grid_pred = gbr_grid.best_estimator_.named_steps['gbr'].predict(house_train)
 gbr_rmse = rmsle(house_labels, gbr_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(gbr_grid.best_score_, gbr_rmse))
+################################## Ada ########################################
+from sklearn.ensemble import AdaBoostRegressor
+
+ada_pipe = Pipeline(steps=[('preprocessor', preprocessor),
+                           ('ada', AdaBoostRegressor(random_state=42))])
+
+ada_param_grid = {''}
 # only uncomment this if your're getting better results
 #pd.to_pickle(house_training, 'house_training')
 #pd.to_pickle(house_test_data, 'house_test_data')
