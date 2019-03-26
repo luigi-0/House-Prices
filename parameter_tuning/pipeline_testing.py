@@ -320,8 +320,8 @@ from sklearn.svm import SVR
 
 svm_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('svm', SVR(gamma='scale'))])
 
-svm_param_grid =  {'svm__C' : [510000, 520000, 530000],
-                   'svm__epsilon' : [100]}
+svm_param_grid =  {'svm__C' : [540000, 550000, 560000],
+                   'svm__epsilon' : [2500, 3000, 3500]}
 
 svm_grid = GridSearchCV(svm_pipe, param_grid=svm_param_grid, cv=5, n_jobs=-1)
 
