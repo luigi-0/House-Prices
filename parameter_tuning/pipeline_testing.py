@@ -11,7 +11,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from sklearn.pipeline import FeatureUnion
 
 house_source_data = pd.read_csv("train.csv")
 house_test = pd.read_csv("test.csv")
@@ -274,7 +273,7 @@ categorical_transformer = Pipeline(steps=[
 
 preprocessor = ColumnTransformer(
     transformers=[
-        ('num', numeric_transformer, numeric_features_full),
+        ('num', numeric_transformer, numeric_features),
         ('cat', categorical_transformer, categorial_onehot_features)])
 
 house_train = preprocessor.fit_transform(house_train_staging.copy())
