@@ -301,7 +301,7 @@ lasso_grid_pred = lasso_grid.best_estimator_.named_steps['lasso'].predict(house_
 
 lasso_rmse = rmsle(house_labels, lasso_grid_pred)
 
-lass_grid_best = lasso_grid.best_estimator_.named_steps['lasso']
+lasso_grid_best = lasso_grid.best_estimator_.named_steps['lasso']
 
 print('Results: {:8f} {:8f}'.format(lasso_grid.best_score_, lasso_rmse))
 ############################## Ridge ##########################################
@@ -498,9 +498,16 @@ score = loaded_model.evaluate(house_train, house_labels) # kernel keeps crashing
 ##################################### Stacker #################################
 from mlxtend.regressor import StackingCVRegressor
 
-stack = StackingCVRegressor(regressors=(svm_grid, lasso, rf),
-                            meta_regressor=lasso)
+stack = StackingCVRegressor(regressors=(ridge_grid_best, lasso_grid_best),
+                            meta_regressor=lasso_grid_best)
 
+
+
+
+
+
+
+###############################################################################
 # Create a function that will create dataframe for submission
 # Note: This function assumes that you will be using the Scikit prediction method
 def kaggle_submission(estimator, test_set, test_source, label, kaggle_id):
