@@ -496,12 +496,28 @@ loaded_model.load_weights("nn_modelV1.h5")
 loaded_model.compile(loss='mean_squared_error', optimizer='adam')
 score = loaded_model.evaluate(house_train, house_labels) # kernel keeps crashing here
 ##################################### Stacker #################################
-from mlxtend.regressor import StackingCVRegressor
+from mlxtend.regressor import StackingRegressor
 
-stack = StackingCVRegressor(regressors=(ridge_grid_best, lasso_grid_best),
-                            meta_regressor=lasso_grid_best)
+# The StackingCVRegressor uses scikit-learn's check_cv
+# internally, which doesn't support a random seed. Thus
+# NumPy's random seed need to be specified explicitely for
+# deterministic behavior
+np.random.seed(RANDOM_SEED)
 
+stack = StackingRegressor(regressors=(svm_grid_best, ridge_grid_best),
+                            meta_regressor=rf_grid_best).fit(house_train, house_labels)
 
+stack_rmse = rmsle(house_labels, stack.predict(house_train))
+
+print('5-fold cross validation scores:\n')
+
+for clf, label in zip([svr, ridge, stack], ['SVM', 'Ridge',
+                                                'StackingRegressor']):
+    scores = cross_val_score(clf, house_train, house_labels, cv=5)
+    print("R^2 Score: %0.2f (+/- %0.2f) [%s]" % (
+        scores.mean(), scores.std(), label))
+    print(stack_rmse)
+    
 
 
 
