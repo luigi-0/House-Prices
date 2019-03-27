@@ -301,11 +301,14 @@ lasso_grid_pred = lasso_grid.best_estimator_.named_steps['lasso'].predict(house_
 
 lasso_rmse = rmsle(house_labels, lasso_grid_pred)
 
+lass_grid_best = lasso_grid.best_estimator_.named_steps['lasso']
+
 print('Results: {:8f} {:8f}'.format(lasso_grid.best_score_, lasso_rmse))
 ############################## Ridge ##########################################
-ridge_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('rig', Ridge(random_state=np.random.seed(seed)))])
+ridge_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
+                             ('rig', Ridge(random_state=np.random.seed(seed)))])
 
-ridge_param_grid = {'rig__alpha' : [21.0, 21.5, 22.0]}
+ridge_param_grid = {'rig__alpha' : [19, 20, 21.0]}
 
 ridge_grid = GridSearchCV(ridge_pipe, param_grid=ridge_param_grid, cv=5, n_jobs=-1)
 
@@ -314,6 +317,8 @@ ridge_grid.fit(house_train_staging.copy(), house_labels)
 ridge_grid_pred = ridge_grid.best_estimator_.named_steps['rig'].predict(house_train)
 
 ridge_rmse = rmsle(house_labels, ridge_grid_pred)
+
+ridge_grid_best = ridge_grid.best_estimator_.named_steps['rig']
 
 print('Results: {:8f} {:8f}'.format(ridge_grid.best_score_, ridge_rmse))
 ############################## Elastic ########################################
@@ -332,14 +337,16 @@ elastic_grid_pred = elastic_grid.best_estimator_.named_steps['elastic'].predict(
 
 elastic_rmse = rmsle(house_labels, elastic_grid_pred)
 
+elastic_grid_best = elastic_grid.best_estimator_.named_steps['elastic']
+
 print('Results: {:8f} {:8f}'.format(elastic_grid.best_score_, elastic_rmse))
 ############################### SVM  ##########################################
 from sklearn.svm import SVR
 
 svm_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('svm', SVR(gamma='scale'))])
 
-svm_param_grid =  {'svm__C' : [540000, 550000, 560000],
-                   'svm__epsilon' : [2500, 3000, 3500]}
+svm_param_grid =  {'svm__C' : [540000, 550000, 560000, 570000, 580000],
+                   'svm__epsilon' : [3000, 3100, 3200, 3300, 3400]}
 
 svm_grid = GridSearchCV(svm_pipe, param_grid=svm_param_grid, cv=5, n_jobs=-1)
 
@@ -349,6 +356,8 @@ svm_grid_pred = svm_grid.best_estimator_.named_steps['svm'].predict(house_train)
 
 svm_rmse = rmsle(house_labels, svm_grid_pred)
 
+svm_grid_best = svm_grid.best_estimator_.named_steps['svm']
+
 print('Results: {:8f} {:8f}'.format(svm_grid.best_score_, svm_rmse))
 ############################ Decision tree ####################################
 from sklearn.tree import DecisionTreeRegressor
@@ -356,8 +365,8 @@ from sklearn.tree import DecisionTreeRegressor
 dtr_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
                            ('dtr', DecisionTreeRegressor(random_state=np.random.seed(seed)))])
 
-dtr_param_grid = {'dtr__max_depth' : [6, 7, 8],
-                   'dtr__max_features': ['auto']}
+dtr_param_grid = {'dtr__max_depth' : [8, 9, 10, 11],
+                   'dtr__max_features': ['auto', 'sqrt', 'log2']}
 
 dtr_grid = GridSearchCV(dtr_pipe, param_grid=dtr_param_grid, cv=5, n_jobs=-1)
 
@@ -368,7 +377,6 @@ dtr_grid_pred = dtr_grid.best_estimator_.named_steps['dtr'].predict(house_train)
 dtr_rmse = rmsle(house_labels, dtr_grid_pred)
 
 # Store the tree to be used in Ada
-
 tree_grid_cv = dtr_grid.best_estimator_.named_steps['dtr']
 
 print('Results: {:8f} {:8f}'.format(dtr_grid.best_score_, dtr_rmse))
@@ -378,8 +386,8 @@ from sklearn.ensemble import RandomForestRegressor
 rf_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
                           ('rf', RandomForestRegressor(random_state=np.random.seed(seed), n_jobs=-1))])
 
-rf_param_grid =  {'rf__max_depth' : [16, 17, 18],
-                   'rf__n_estimators' : [700, 800, 900],
+rf_param_grid =  {'rf__max_depth' : [14, 15, 16, 17],
+                   'rf__n_estimators' : [500, 600, 700, 800],
                    'rf__max_features': ['auto', 'sqrt']}
 
 rf_grid = GridSearchCV(rf_pipe, param_grid=rf_param_grid, cv=5, n_jobs=-1)
@@ -390,6 +398,8 @@ rf_grid_pred = rf_grid.best_estimator_.named_steps['rf'].predict(house_train)
 
 rf_rmse = rmsle(house_labels, rf_grid_pred)
 
+rf_grid_best = rf_grid.best_estimator_.named_steps['rf']
+
 print('Results: {:8f} {:8f}'.format(rf_grid.best_score_, rf_rmse))
 ################################## GBR ########################################
 from sklearn.ensemble import GradientBoostingRegressor
@@ -397,10 +407,10 @@ from sklearn.ensemble import GradientBoostingRegressor
 gbr_pipe = Pipeline(steps=[('preprocessor', preprocessor),
                            ('gbr', GradientBoostingRegressor(random_state=np.random.seed(seed)))])
 
-gbr_param_grid = {'gbr__max_depth' : [2, 3, 4],
-                  'gbr__n_estimators' : [32, 33, 34],
-                  'gbr__learning_rate' : [0.2, 0.3, 0.4],
-                  'gbr__subsample' : [1.0]}
+gbr_param_grid = {'gbr__max_depth' : [2, 3, 4, 5],
+                  'gbr__n_estimators' : [38, 39, 40],
+                  'gbr__learning_rate' : [0.1, 0.2, 0.3],
+                  'gbr__subsample' : [0.8, 0.9, 1.0]}
 
 gbr_grid = GridSearchCV(gbr_pipe, param_grid=gbr_param_grid, cv=5, n_jobs=-1)
 
@@ -410,6 +420,8 @@ gbr_grid_pred = gbr_grid.best_estimator_.named_steps['gbr'].predict(house_train)
 
 gbr_rmse = rmsle(house_labels, gbr_grid_pred)
 
+gbr_grid_best = gbr_grid.best_estimator_.named_steps['gbr']
+
 print('Results: {:8f} {:8f}'.format(gbr_grid.best_score_, gbr_rmse))
 ################################## Ada ########################################
 from sklearn.ensemble import AdaBoostRegressor
@@ -417,8 +429,8 @@ from sklearn.ensemble import AdaBoostRegressor
 ada_pipe = Pipeline(steps=[('preprocessor', preprocessor),
                            ('ada', AdaBoostRegressor(tree_grid_cv,loss='square', random_state=np.random.seed(seed)))])
 
-ada_param_grid = {'ada__n_estimators' : [650, 700, 750],
-                  'ada__learning_rate' : [0.8, 0.9, 1.0]}
+ada_param_grid = {'ada__n_estimators' : [450, 500, 550],
+                  'ada__learning_rate' : [0.5, 0.6, 0.7]}
 
 ada_grid = GridSearchCV(ada_pipe, param_grid=ada_param_grid, cv=5, n_jobs=-1)
 
@@ -427,6 +439,8 @@ ada_grid.fit(house_train_staging.copy(), house_labels)
 ada_grid_pred = ada_grid.best_estimator_.named_steps['ada'].predict(house_train)
 
 ada_rmse = rmsle(house_labels, ada_grid_pred)
+
+ada_grid_best = ada_grid.best_estimator_.named_steps['ada']
 
 print('Results: {:8f} {:8f}'.format(ada_grid.best_score_, ada_rmse))
 ############################# Neural Network ##################################
@@ -481,7 +495,12 @@ loaded_model.load_weights("nn_modelV1.h5")
 
 loaded_model.compile(loss='mean_squared_error', optimizer='adam')
 score = loaded_model.evaluate(house_train, house_labels) # kernel keeps crashing here
-###############################################################################
+##################################### Stacker #################################
+from mlxtend.regressor import StackingCVRegressor
+
+stack = StackingCVRegressor(regressors=(svm_grid, lasso, rf),
+                            meta_regressor=lasso)
+
 # Create a function that will create dataframe for submission
 # Note: This function assumes that you will be using the Scikit prediction method
 def kaggle_submission(estimator, test_set, test_source, label, kaggle_id):
@@ -500,10 +519,10 @@ def kaggle_submission(estimator, test_set, test_source, label, kaggle_id):
     submission[label] = predictions[label]
     return submission
 
-predictions = kaggle_submission(ada_grid.best_estimator_.named_steps['ada'], house_test_data, 
+predictions = kaggle_submission(rf_grid.best_estimator_.named_steps['rf'], house_test_data, 
                                 house_test, 'SalePrice', 'Id')
 
-predictions.to_csv('ada_submission.csv', index=False)
+predictions.to_csv('rf_submission.csv', index=False)
 
 # only uncomment this if your're getting better results
 #house_training = preprocessor.fit_transform(house_train_staging.copy())
