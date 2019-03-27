@@ -285,11 +285,13 @@ from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
 
+seed = 42
+np.random.seed(seed)
 ############################## Lasso ##########################################
-lasso_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('lasso', Lasso(random_state=42))])
+lasso_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('lasso', Lasso(random_state=np.random.seed(seed)))])
 
-lasso_param_grid = {'lasso__alpha' : [137.5, 138, 138.8],
-                    'lasso__max_iter' : [32, 33, 34]}
+lasso_param_grid = {'lasso__alpha' : [143, 144, 145, 146],
+                    'lasso__max_iter' : [31, 32, 33, 34]}
 
 lasso_grid = GridSearchCV(lasso_pipe, param_grid=lasso_param_grid, cv=5, n_jobs=-1)
 
@@ -301,7 +303,7 @@ lasso_rmse = rmsle(house_labels, lasso_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(lasso_grid.best_score_, lasso_rmse))
 ############################## Ridge ##########################################
-ridge_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('rig', Ridge(random_state=42))])
+ridge_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('rig', Ridge(random_state=np.random.seed(seed)))])
 
 ridge_param_grid = {'rig__alpha' : [21.0, 21.5, 22.0]}
 
@@ -315,7 +317,8 @@ ridge_rmse = rmsle(house_labels, ridge_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(ridge_grid.best_score_, ridge_rmse))
 ############################## Elastic ########################################
-elastic_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('elastic', ElasticNet(normalize=False,random_state=42))])
+elastic_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
+                               ('elastic', ElasticNet(normalize=False,random_state=np.random.seed(seed)))])
 
 elastic_param_grid = {'elastic__alpha' : [0.4, 0.45, 0.5, 138],
                     'elastic__max_iter' : [30, 33, 35, 40,],
@@ -350,7 +353,8 @@ print('Results: {:8f} {:8f}'.format(svm_grid.best_score_, svm_rmse))
 ############################ Decision tree ####################################
 from sklearn.tree import DecisionTreeRegressor
 
-dtr_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('dtr', DecisionTreeRegressor(random_state=42))])
+dtr_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
+                           ('dtr', DecisionTreeRegressor(random_state=np.random.seed(seed)))])
 
 dtr_param_grid = {'dtr__max_depth' : [6, 7, 8],
                    'dtr__max_features': ['auto']}
@@ -372,7 +376,7 @@ print('Results: {:8f} {:8f}'.format(dtr_grid.best_score_, dtr_rmse))
 from sklearn.ensemble import RandomForestRegressor
 
 rf_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
-                          ('rf', RandomForestRegressor(random_state=42, n_jobs=-1))])
+                          ('rf', RandomForestRegressor(random_state=np.random.seed(seed), n_jobs=-1))])
 
 rf_param_grid =  {'rf__max_depth' : [16, 17, 18],
                    'rf__n_estimators' : [700, 800, 900],
@@ -391,7 +395,7 @@ print('Results: {:8f} {:8f}'.format(rf_grid.best_score_, rf_rmse))
 from sklearn.ensemble import GradientBoostingRegressor
 
 gbr_pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                           ('gbr', GradientBoostingRegressor(random_state=42))])
+                           ('gbr', GradientBoostingRegressor(random_state=np.random.seed(seed)))])
 
 gbr_param_grid = {'gbr__max_depth' : [2, 3, 4],
                   'gbr__n_estimators' : [32, 33, 34],
@@ -411,7 +415,7 @@ print('Results: {:8f} {:8f}'.format(gbr_grid.best_score_, gbr_rmse))
 from sklearn.ensemble import AdaBoostRegressor
 
 ada_pipe = Pipeline(steps=[('preprocessor', preprocessor),
-                           ('ada', AdaBoostRegressor(tree_grid_cv,loss='square', random_state=42))])
+                           ('ada', AdaBoostRegressor(tree_grid_cv,loss='square', random_state=np.random.seed(seed)))])
 
 ada_param_grid = {'ada__n_estimators' : [650, 700, 750],
                   'ada__learning_rate' : [0.8, 0.9, 1.0]}
@@ -507,7 +511,6 @@ predictions.to_csv('ada_submission.csv', index=False)
 
 #pd.to_pickle(house_training, 'house_training')
 #pd.to_pickle(house_test_data, 'house_test_data')
-
 
 
 
