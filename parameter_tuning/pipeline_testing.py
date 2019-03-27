@@ -222,6 +222,17 @@ def data_staging(data_in):
                         )
     data_in_cleaned = pd.concat([data_in_cleaned, data_in['LotFrontage']], axis=1)
     
+    data_in_cleaned = mapper(data_in_cleaned, qual_rating_features, qual_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, bsmt_finish_rating_features, bsmtfin_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, exposure_rating_feature, exposure_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, electrical_rating_feature, electrical_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, functional_rating_feature, functional_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, grg_finish_rating_feature, grgfin_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, paved_rating_feature, paved_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, fence_rating_feature, fence_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, alley_rating_feature, alley_ordinal_ratings)
+    data_in_cleaned = mapper(data_in_cleaned, utilities_rating_feature, utilities_ordinal_ratings)
+    
     # Generate new features.
     data_in_cleaned = generator(data_in_cleaned)
     
@@ -244,13 +255,17 @@ numeric_features = ['MSSubClass', 'LotArea', 'OverallQual', 'OverallCond',
  'LotFrontage','ExterQual', 'ExterCond', 'BsmtQual', 'BsmtCond', 'HeatingQC', 
  'KitchenQual', 'FireplaceQu', 'GarageQual', 'GarageCond', 'PoolQC',
  'BsmtExposure','Electrical','Functional','BsmtFinType1', 'BsmtFinType2',
- 'GarageFinish','PavedDrive','Fence', 'Alley', 'Utilities']
+ 'GarageFinish','PavedDrive','Fence', 'Alley', 'Utilities',
+ 'ExterQual', 'ExterCond', 'BsmtQual', 'BsmtCond',
+ 'HeatingQC', 'KitchenQual', 'FireplaceQu', 'GarageQual',
+ 'GarageCond', 'PoolQC', 'BsmtExposure', 'Electrical',
+ 'Functional', 'BsmtFinType1', 'BsmtFinType2',
+ 'GarageFinish', 'PavedDrive', 'Fence', 'Alley', 'Utilities']
 
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import PolynomialFeatures
 
 numeric_transformer = Pipeline(steps=[
-    ('mapping', Mapper()),
     ('imputer', SimpleImputer(strategy='median')),
     ('scaler', StandardScaler())])
 
@@ -259,10 +274,11 @@ categorical_transformer = Pipeline(steps=[
 
 preprocessor = ColumnTransformer(
     transformers=[
-        ('num', numeric_transformer, numeric_features),
+        ('num', numeric_transformer, numeric_features_full),
         ('cat', categorical_transformer, categorial_onehot_features)])
 
-house_train = preprocessor.fit_transform(house_train_staging)
+house_train = preprocessor.fit_transform(house_train_staging.copy())
+house_test_data = preprocessor.transform(house_test_staging.copy())
 
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import Lasso
@@ -410,7 +426,86 @@ ada_grid_pred = ada_grid.best_estimator_.named_steps['ada'].predict(house_train)
 ada_rmse = rmsle(house_labels, ada_grid_pred)
 
 print('Results: {:8f} {:8f}'.format(ada_grid.best_score_, ada_rmse))
+############################# Neural Network ##################################
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.wrappers.scikit_learn import KerasRegressor
+from keras.losses import mean_squared_logarithmic_error
+
+import tensorflow as tf
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
+
+# define base model
+def baseline_model():
+    # create model
+    model = Sequential()
+    model.add(Dense(256, input_dim=np.shape(house_train)[1], 
+                    kernel_initializer='normal', activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(256))
+    model.add(Dropout(0.2))
+    model.add(Dense(256))
+    model.add(Dropout(0.2))
+    model.add(Dense(1, kernel_initializer='normal'))
+    # Compile model
+    model.compile(loss=mean_squared_logarithmic_error, optimizer='adam')
+    return model  
+    
+nnr = KerasRegressor(build_fn=baseline_model, epochs=500, batch_size=128, verbose=0)
+
+nnr.fit(house_train, house_labels)
+
+nnr_pred = nnr.predict(house_train)
+
+nn_rmse = rmsle(house_labels, nn_grid_pred)
+
+print('Results: {:8f} {:8f}'.format(nn_grid.best_score_, nn_rmse))
+
+######################## pre-trained nn model using google collab #############
+from keras.models import model_from_json
+
+json_file = open('model.json', 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+
+loaded_model = model_from_json(loaded_model_json)
+
+# load weights into new model
+loaded_model.load_weights("nn_modelV1.h5")
+
+loaded_model.compile(loss='mean_squared_error', optimizer='adam')
+score = loaded_model.evaluate(house_train, house_labels) # kernel keeps crashing here
+###############################################################################
+# Create a function that will create dataframe for submission
+# Note: This function assumes that you will be using the Scikit prediction method
+def kaggle_submission(estimator, test_set, test_source, label, kaggle_id):
+    """
+    Create a csv to submit predictions to Kaggle.
+    
+    estimator: Sci-kit estimator used on training set.
+    test_set: The test set.
+    label: The name of the label; must be a string.
+    test_source: The original training set, which contains the Id column.
+    kaggle_id: The id column from the test set. 
+    """
+    predictions = estimator.predict(test_set)
+    predictions = pd.DataFrame(predictions, columns=[label])
+    submission = pd.DataFrame(test_source[kaggle_id])
+    submission[label] = predictions[label]
+    return submission
+
+predictions = kaggle_submission(ada_grid.best_estimator_.named_steps['ada'], house_test_data, 
+                                house_test, 'SalePrice', 'Id')
+
+predictions.to_csv('ada_submission.csv', index=False)
+
 # only uncomment this if your're getting better results
+#house_training = preprocessor.fit_transform(house_train_staging.copy())
+#house_test_data = preprocessor.fit_transform(house_test_staging.copy())
+
 #pd.to_pickle(house_training, 'house_training')
 #pd.to_pickle(house_test_data, 'house_test_data')
 
