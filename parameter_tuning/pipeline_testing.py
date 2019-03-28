@@ -288,7 +288,8 @@ from sklearn.model_selection import GridSearchCV
 seed = 42
 np.random.seed(seed)
 ############################## Lasso ##########################################
-lasso_pipe = Pipeline(steps=[('preprocessor', preprocessor), ('lasso', Lasso(random_state=np.random.seed(seed)))])
+lasso_pipe = Pipeline(steps=[('preprocessor', preprocessor), 
+                             ('lasso', Lasso(tol=0.05, random_state=np.random.seed(seed)))])
 
 lasso_param_grid = {'lasso__alpha' : [143, 144, 145, 146],
                     'lasso__max_iter' : [31, 32, 33, 34]}
@@ -504,25 +505,24 @@ from mlxtend.regressor import StackingRegressor
 # deterministic behavior
 np.random.seed(RANDOM_SEED)
 
-stack = StackingRegressor(regressors=(svm_grid_best, ridge_grid_best),
+regressors = (svm_grid_best, rf_grid_best,
+              gbr_grid_best, ada_grid_best)
+
+stack = StackingRegressor(regressors=regressors,
                             meta_regressor=rf_grid_best).fit(house_train, house_labels)
 
 stack_rmse = rmsle(house_labels, stack.predict(house_train))
 
 print('5-fold cross validation scores:\n')
 
-for clf, label in zip([svr, ridge, stack], ['SVM', 'Ridge',
+for regressors, label in zip([svm_grid_best, rf_grid_best,
+              gbr_grid_best, ada_grid_best, stack], ['SVM', 'RF', 'GBR', 'ADA', 
                                                 'StackingRegressor']):
-    scores = cross_val_score(clf, house_train, house_labels, cv=5)
+    scores = cross_val_score(regressors, house_train, house_labels, cv=5)
     print("R^2 Score: %0.2f (+/- %0.2f) [%s]" % (
         scores.mean(), scores.std(), label))
-    print(stack_rmse)
     
-
-
-
-
-
+print(stack_rmse)
 ###############################################################################
 # Create a function that will create dataframe for submission
 # Note: This function assumes that you will be using the Scikit prediction method
@@ -542,10 +542,10 @@ def kaggle_submission(estimator, test_set, test_source, label, kaggle_id):
     submission[label] = predictions[label]
     return submission
 
-predictions = kaggle_submission(rf_grid.best_estimator_.named_steps['rf'], house_test_data, 
+predictions = kaggle_submission(stack, house_test_data, 
                                 house_test, 'SalePrice', 'Id')
 
-predictions.to_csv('rf_submission.csv', index=False)
+predictions.to_csv('stack_submission.csv', index=False)
 
 # only uncomment this if your're getting better results
 #house_training = preprocessor.fit_transform(house_train_staging.copy())
